@@ -32,6 +32,9 @@ import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.Polyline;
+import com.google.maps.android.clustering.Cluster;
+import com.google.maps.android.clustering.ClusterManager;
+import com.google.maps.android.collections.MarkerManager;
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
@@ -52,6 +55,7 @@ final class GoogleMapController
         MethodChannel.MethodCallHandler,
         OnMapReadyCallback,
         GoogleMapListener,
+        ClusterListener,
         PlatformView {
 
   private static final String TAG = "GoogleMapController";
@@ -73,11 +77,13 @@ final class GoogleMapController
   private final Context context;
   private final LifecycleProvider lifecycleProvider;
   private final MarkersController markersController;
+  private final ClustersController clustersController;
   private final PolygonsController polygonsController;
   private final PolylinesController polylinesController;
   private final CirclesController circlesController;
   private final TileOverlaysController tileOverlaysController;
   private List<Object> initialMarkers;
+  private List<Object> initialClusters;
   private List<Object> initialPolygons;
   private List<Object> initialPolylines;
   private List<Object> initialCircles;
@@ -98,6 +104,7 @@ final class GoogleMapController
     methodChannel.setMethodCallHandler(this);
     this.lifecycleProvider = lifecycleProvider;
     this.markersController = new MarkersController(methodChannel);
+    this.clustersController = new ClustersController(methodChannel);
     this.polygonsController = new PolygonsController(methodChannel, density);
     this.polylinesController = new PolylinesController(methodChannel, density);
     this.circlesController = new CirclesController(methodChannel, density);
@@ -126,30 +133,38 @@ final class GoogleMapController
     return trackCameraPosition ? googleMap.getCameraPosition() : null;
   }
 
-  @Override
-  public void onMapReady(GoogleMap googleMap) {
-    this.googleMap = googleMap;
-    this.googleMap.setIndoorEnabled(this.indoorEnabled);
-    this.googleMap.setTrafficEnabled(this.trafficEnabled);
-    this.googleMap.setBuildingsEnabled(this.buildingsEnabled);
-    googleMap.setOnInfoWindowClickListener(this);
-    if (mapReadyResult != null) {
-      mapReadyResult.success(null);
-      mapReadyResult = null;
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        this.googleMap = googleMap;
+        assert this.googleMap != null;
+        this.googleMap.setIndoorEnabled(this.indoorEnabled);
+        this.googleMap.setTrafficEnabled(this.trafficEnabled);
+        this.googleMap.setBuildingsEnabled(this.buildingsEnabled);
+        if (mapReadyResult != null) {
+            mapReadyResult.success(null);
+            mapReadyResult = null;
+        }
+        setGoogleMapListener(this);
+        updateMyLocationSettings();
+        markersController.setMarkerManager(new MarkerManager(googleMap));
+        markersController.setGoogleMap(googleMap);
+        markersController.addMarkersListener(this);
+
+        clustersController.setGoogleMap(googleMap);
+        clustersController.setClusterManager(new ClusterManager<>(context, googleMap, markersController.getMarkerManager()));
+        clustersController.setClusterListeners(this);
+
+        polygonsController.setGoogleMap(googleMap);
+        polylinesController.setGoogleMap(googleMap);
+        circlesController.setGoogleMap(googleMap);
+        tileOverlaysController.setGoogleMap(googleMap);
+        updateInitialMarkers();
+        updateInitialClusters();
+        updateInitialPolygons();
+        updateInitialPolylines();
+        updateInitialCircles();
+        updateInitialTileOverlays();
     }
-    setGoogleMapListener(this);
-    updateMyLocationSettings();
-    markersController.setGoogleMap(googleMap);
-    polygonsController.setGoogleMap(googleMap);
-    polylinesController.setGoogleMap(googleMap);
-    circlesController.setGoogleMap(googleMap);
-    tileOverlaysController.setGoogleMap(googleMap);
-    updateInitialMarkers();
-    updateInitialPolygons();
-    updateInitialPolylines();
-    updateInitialCircles();
-    updateInitialTileOverlays();
-  }
 
   @Override
   public void onMethodCall(MethodCall call, MethodChannel.Result result) {
@@ -252,6 +267,17 @@ final class GoogleMapController
           markersController.removeMarkers(markerIdsToRemove);
           result.success(null);
           break;
+        }
+      case "cluster#update":
+        {
+            List<Object> clusterItemsToAdd = call.argument("clusterItemsToAdd");
+            clustersController.addClusterItems(clusterItemsToAdd);
+            List<Object> clusterItemsToChange = call.argument("clusterItemsToChange");
+            clustersController.changeClusterItems(clusterItemsToChange);
+            List<Object> clusterItemsIdsToRemove = call.argument("clusterItemsIdsToRemove");
+            clustersController.removeClusterItems(clusterItemsIdsToRemove);
+            result.success(null);
+            break;
         }
       case "markers#showInfoWindow":
         {
@@ -481,6 +507,36 @@ final class GoogleMapController
     markersController.onMarkerDragEnd(marker.getId(), marker.getPosition());
   }
 
+    @Override
+    public boolean onClusterClick(Cluster<MyClusterItem> cluster) {
+        return clustersController.onClusterClick(cluster);
+    }
+
+    @Override
+    public void onClusterInfoWindowClick(Cluster<MyClusterItem> cluster) {
+        clustersController.onClusterInfoWindowClick(cluster);
+    }
+
+    @Override
+    public void onClusterInfoWindowLongClick(Cluster<MyClusterItem> cluster) {
+        clustersController.onClusterInfoWindowLongClick(cluster);
+    }
+
+    @Override
+    public boolean onClusterItemClick(MyClusterItem item) {
+        return clustersController.onClusterItemClick(item);
+    }
+
+    @Override
+    public void onClusterItemInfoWindowClick(MyClusterItem item) {
+        clustersController.onClusterItemInfoWindowClick(item);
+    }
+
+    @Override
+    public void onClusterItemInfoWindowLongClick(MyClusterItem item) {
+        clustersController.onClusterItemInfoWindowLongClick(item);
+    }
+
   @Override
   public void onPolygonClick(Polygon polygon) {
     polygonsController.onPolygonTap(polygon.getId());
@@ -504,6 +560,7 @@ final class GoogleMapController
     disposed = true;
     methodChannel.setMethodCallHandler(null);
     setGoogleMapListener(null);
+    clustersController.setClusterListeners(null);
     destroyMapViewIfNecessary();
     Lifecycle lifecycle = lifecycleProvider.getLifecycle();
     if (lifecycle != null) {
@@ -519,8 +576,8 @@ final class GoogleMapController
     googleMap.setOnCameraMoveStartedListener(listener);
     googleMap.setOnCameraMoveListener(listener);
     googleMap.setOnCameraIdleListener(listener);
-    googleMap.setOnMarkerClickListener(listener);
-    googleMap.setOnMarkerDragListener(listener);
+//    googleMap.setOnMarkerClickListener(listener);
+//    googleMap.setOnMarkerDragListener(listener);
     googleMap.setOnPolygonClickListener(listener);
     googleMap.setOnPolylineClickListener(listener);
     googleMap.setOnCircleClickListener(listener);
@@ -726,8 +783,20 @@ final class GoogleMapController
     }
   }
 
+    @Override
+    public void setInitialClusters(Object initialClusters) {
+        this.initialClusters = (List<Object>) initialClusters;
+        if (googleMap != null) {
+            updateInitialClusters();
+        }
+    }
+
   private void updateInitialMarkers() {
     markersController.addMarkers(initialMarkers);
+  }
+
+  private void updateInitialClusters() {
+      clustersController.addClusterItems(initialClusters);
   }
 
   @Override

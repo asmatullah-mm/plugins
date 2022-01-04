@@ -107,6 +107,8 @@ class GoogleMap extends StatefulWidget {
     this.trafficEnabled = false,
     this.buildingsEnabled = true,
     this.markers = const <Marker>{},
+    this.clusterItems = const <ClusterItem>{},
+    this.onClusterTap,
     this.polygons = const <Polygon>{},
     this.polylines = const <Polyline>{},
     this.circles = const <Circle>{},
@@ -178,6 +180,12 @@ class GoogleMap extends StatefulWidget {
 
   /// Markers to be placed on the map.
   final Set<Marker> markers;
+
+  /// Cluster Items to be placed on the map.
+  final Set<ClusterItem> clusterItems;
+
+  /// Called every time a [ClusterItem] is tapped.
+  final VoidCallback? onClusterTap;
 
   /// Polygons to be placed on the map.
   final Set<Polygon> polygons;
@@ -288,6 +296,7 @@ class _GoogleMapState extends State<GoogleMap> {
       Completer<GoogleMapController>();
 
   Map<MarkerId, Marker> _markers = <MarkerId, Marker>{};
+  Map<ClusterId, ClusterItem> _clusterItems = <ClusterId, ClusterItem>{};
   Map<PolygonId, Polygon> _polygons = <PolygonId, Polygon>{};
   Map<PolylineId, Polyline> _polylines = <PolylineId, Polyline>{};
   Map<CircleId, Circle> _circles = <CircleId, Circle>{};
@@ -303,6 +312,7 @@ class _GoogleMapState extends State<GoogleMap> {
           TextDirection.ltr,
       initialCameraPosition: widget.initialCameraPosition,
       markers: widget.markers,
+      clusters: widget.clusterItems,
       polygons: widget.polygons,
       polylines: widget.polylines,
       circles: widget.circles,
@@ -316,6 +326,7 @@ class _GoogleMapState extends State<GoogleMap> {
     super.initState();
     _googleMapOptions = _GoogleMapOptions.fromWidget(widget);
     _markers = keyByMarkerId(widget.markers);
+    _clusterItems = keyByClusterItemId(widget.clusterItems);
     _polygons = keyByPolygonId(widget.polygons);
     _polylines = keyByPolylineId(widget.polylines);
     _circles = keyByCircleId(widget.circles);
@@ -333,6 +344,7 @@ class _GoogleMapState extends State<GoogleMap> {
     super.didUpdateWidget(oldWidget);
     _updateOptions();
     _updateMarkers();
+    _updateClusters();
     _updatePolygons();
     _updatePolylines();
     _updateCircles();
@@ -358,6 +370,14 @@ class _GoogleMapState extends State<GoogleMap> {
     controller._updateMarkers(
         MarkerUpdates.from(_markers.values.toSet(), widget.markers));
     _markers = keyByMarkerId(widget.markers);
+  }
+
+  void _updateClusters() async {
+    final GoogleMapController controller = await _controller.future;
+    // ignore: unawaited_futures
+    controller._updateClusters(
+        ClusterUpdates.from(_clusterItems.values.toSet(), widget.clusterItems));
+    _clusterItems = keyByClusterItemId(widget.clusterItems);
   }
 
   void _updatePolygons() async {
@@ -449,6 +469,36 @@ class _GoogleMapState extends State<GoogleMap> {
     final ValueChanged<LatLng>? onDragEnd = marker.onDragEnd;
     if (onDragEnd != null) {
       onDragEnd(position);
+    }
+  }
+
+  void onCusterTap() {
+    final VoidCallback? onTap = widget.onClusterTap;
+    if (onTap != null) {
+      onTap();
+    }
+  }
+
+  void onCusterItemTap(ClusterId clusterItemId) {
+    final ClusterItem? cluster = _clusterItems[clusterItemId];
+    if (cluster == null) {
+      throw UnknownMapObjectIdError('cluster', clusterItemId, 'onTap');
+    }
+    final VoidCallback? onTap = cluster.onTap;
+    if (onTap != null) {
+      onTap();
+    }
+  }
+
+  void onCusterItemInfoWindowTap(ClusterId clusterItemId) {
+    final ClusterItem? cluster = _clusterItems[clusterItemId];
+    if (cluster == null) {
+      throw UnknownMapObjectIdError(
+          'cluster', clusterItemId, 'InfoWindow onTap');
+    }
+    final VoidCallback? onTap = cluster.infoWindow.onTap;
+    if (onTap != null) {
+      onTap();
     }
   }
 

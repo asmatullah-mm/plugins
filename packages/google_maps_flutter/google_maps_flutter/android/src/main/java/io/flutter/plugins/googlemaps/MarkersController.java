@@ -4,10 +4,12 @@
 
 package io.flutter.plugins.googlemaps;
 
+import androidx.annotation.Nullable;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.maps.android.collections.MarkerManager;
 import io.flutter.plugin.common.MethodChannel;
 import java.util.HashMap;
 import java.util.List;
@@ -15,10 +17,15 @@ import java.util.Map;
 
 class MarkersController {
 
+  private static final String TAG = "MarkersController";
   private final Map<String, MarkerController> markerIdToController;
   private final Map<String, String> googleMapsMarkerIdToDartMarkerId;
   private final MethodChannel methodChannel;
+  private MarkerManager markerManager;
   private GoogleMap googleMap;
+  private GoogleMap.OnMarkerClickListener onMarkerClickListener;
+  private GoogleMap.OnMarkerDragListener onMarkerDragListener;
+  private GoogleMap.OnInfoWindowClickListener onInfoWindowClickListener;
 
   MarkersController(MethodChannel methodChannel) {
     this.markerIdToController = new HashMap<>();
@@ -28,6 +35,20 @@ class MarkersController {
 
   void setGoogleMap(GoogleMap googleMap) {
     this.googleMap = googleMap;
+  }
+
+  void setMarkerManager(MarkerManager markerManager) {
+    this.markerManager = markerManager;
+  }
+
+  MarkerManager getMarkerManager() {
+    return this.markerManager;
+  }
+  
+  void addMarkersListener(@Nullable GoogleMapListener listener) {
+    this.onMarkerClickListener = listener;
+    this.onMarkerDragListener = listener;
+    this.onInfoWindowClickListener = listener;
   }
 
   void addMarkers(List<Object> markersToAdd) {
@@ -157,10 +178,18 @@ class MarkersController {
   }
 
   private void addMarker(String markerId, MarkerOptions markerOptions, boolean consumeTapEvents) {
-    final Marker marker = googleMap.addMarker(markerOptions);
+    MarkerManager.Collection collection = markerManager.newCollection();
+    final Marker marker = collection.addMarker(markerOptions);
+    setMarkersListener(collection);
     MarkerController controller = new MarkerController(marker, consumeTapEvents);
     markerIdToController.put(markerId, controller);
     googleMapsMarkerIdToDartMarkerId.put(marker.getId(), markerId);
+  }
+
+  private void setMarkersListener(MarkerManager.Collection collection){
+    collection.setOnMarkerClickListener(this.onMarkerClickListener);
+    collection.setOnMarkerDragListener(this.onMarkerDragListener);
+    collection.setOnInfoWindowClickListener(this.onInfoWindowClickListener);
   }
 
   private void changeMarker(Object marker) {

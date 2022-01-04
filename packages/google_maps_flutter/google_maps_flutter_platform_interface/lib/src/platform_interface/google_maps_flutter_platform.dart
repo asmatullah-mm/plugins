@@ -76,6 +76,19 @@ abstract class GoogleMapsFlutterPlatform extends PlatformInterface {
     throw UnimplementedError('updateMarkers() has not been implemented.');
   }
 
+  /// Updates cluster configuration.
+  ///
+  /// Change listeners are notified once the update has been made on the
+  /// platform side.
+  ///
+  /// The returned [Future] completes after listeners have been notified.
+  Future<void> updateClusters(
+    ClusterUpdates clusterUpdates, {
+    required int mapId,
+  }) {
+    throw UnimplementedError('updateClusters() has not been implemented.');
+  }
+
   /// Updates polygon configuration.
   ///
   /// Change listeners are notified once the update has been made on the
@@ -318,6 +331,23 @@ abstract class GoogleMapsFlutterPlatform extends PlatformInterface {
     throw UnimplementedError('onMarkerDragEnd() has not been implemented.');
   }
 
+  /// A [Cluster] has been tapped.
+  Stream<ClusterTapEvent> onClusterTap({required int mapId}) {
+    throw UnimplementedError('onClusterTap() has not been implemented.');
+  }
+
+  /// A [ClusterItem] has been tapped.
+  Stream<ClusterItemTapEvent> onClusterItemTap({required int mapId}) {
+    throw UnimplementedError('onClusterItemTap() has not been implemented.');
+  }
+
+  /// A [ClusterItemInfoWindow] has been tapped.
+  Stream<ClusterItemInfoWindowTapEvent> onClusterItemInfoWindowTap(
+      {required int mapId}) {
+    throw UnimplementedError(
+        'onClusterItemInfoWindowTap() has not been implemented.');
+  }
+
   /// A [Polyline] has been tapped.
   Stream<PolylineTapEvent> onPolylineTap({required int mapId}) {
     throw UnimplementedError('onPolylineTap() has not been implemented.');
@@ -354,6 +384,7 @@ abstract class GoogleMapsFlutterPlatform extends PlatformInterface {
     PlatformViewCreatedCallback onPlatformViewCreated, {
     required CameraPosition initialCameraPosition,
     Set<Marker> markers = const <Marker>{},
+    Set<ClusterItem> clusters = const <ClusterItem>{},
     Set<Polygon> polygons = const <Polygon>{},
     Set<Polyline> polylines = const <Polyline>{},
     Set<Circle> circles = const <Circle>{},
@@ -382,6 +413,7 @@ abstract class GoogleMapsFlutterPlatform extends PlatformInterface {
     required CameraPosition initialCameraPosition,
     required TextDirection textDirection,
     Set<Marker> markers = const <Marker>{},
+    Set<ClusterItem> clusters = const <ClusterItem>{},
     Set<Polygon> polygons = const <Polygon>{},
     Set<Polyline> polylines = const <Polyline>{},
     Set<Circle> circles = const <Circle>{},
@@ -394,6 +426,7 @@ abstract class GoogleMapsFlutterPlatform extends PlatformInterface {
       onPlatformViewCreated,
       initialCameraPosition: initialCameraPosition,
       markers: markers,
+      clusters: clusters,
       polygons: polygons,
       polylines: polylines,
       circles: circles,

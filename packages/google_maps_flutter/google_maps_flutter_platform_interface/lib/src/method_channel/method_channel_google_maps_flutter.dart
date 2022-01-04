@@ -120,6 +120,22 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
   }
 
   @override
+  Stream<ClusterTapEvent> onClusterTap({required int mapId}) {
+    return _events(mapId).whereType<ClusterTapEvent>();
+  }
+
+  @override
+  Stream<ClusterItemTapEvent> onClusterItemTap({required int mapId}) {
+    return _events(mapId).whereType<ClusterItemTapEvent>();
+  }
+
+  @override
+  Stream<ClusterItemInfoWindowTapEvent> onClusterItemInfoWindowTap(
+      {required int mapId}) {
+    return _events(mapId).whereType<ClusterItemInfoWindowTapEvent>();
+  }
+
+  @override
   Stream<InfoWindowTapEvent> onInfoWindowTap({required int mapId}) {
     return _events(mapId).whereType<InfoWindowTapEvent>();
   }
@@ -205,6 +221,23 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
           MarkerId(call.arguments['markerId']),
         ));
         break;
+      case 'cluster#onTap':
+        _mapEventStreamController.add(ClusterTapEvent(
+          mapId,
+        ));
+        break;
+      case 'clusterItem#onTap':
+        _mapEventStreamController.add(ClusterItemTapEvent(
+          mapId,
+          ClusterId(call.arguments['markerId']),
+        ));
+        break;
+      case 'clusterItemInfoWindow#onTap':
+        _mapEventStreamController.add(ClusterItemInfoWindowTapEvent(
+          mapId,
+          ClusterId(call.arguments['markerId']),
+        ));
+        break;
       case 'infoWindow#onTap':
         _mapEventStreamController.add(InfoWindowTapEvent(
           mapId,
@@ -285,6 +318,21 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
     return channel(mapId).invokeMethod<void>(
       'markers#update',
       markerUpdates.toJson(),
+    );
+  }
+
+  @override
+  Future<void> updateClusters(
+    ClusterUpdates clusterUpdates, {
+    required int mapId,
+  }) {
+    // assert(clusterUpdates != null);
+    // TODO(amirh): remove this on when the invokeMethod update makes it to stable Flutter.
+    // https://github.com/flutter/flutter/issues/26431
+    // ignore: strong_mode_implicit_dynamic_method
+    return channel(mapId).invokeMethod<void>(
+      'cluster#update',
+      clusterUpdates.toJson(),
     );
   }
 
@@ -487,6 +535,7 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
     required CameraPosition initialCameraPosition,
     required TextDirection textDirection,
     Set<Marker> markers = const <Marker>{},
+    Set<ClusterItem> clusters = const <ClusterItem>{},
     Set<Polygon> polygons = const <Polygon>{},
     Set<Polyline> polylines = const <Polyline>{},
     Set<Circle> circles = const <Circle>{},
@@ -498,6 +547,7 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
       'initialCameraPosition': initialCameraPosition.toMap(),
       'options': mapOptions,
       'markersToAdd': serializeMarkerSet(markers),
+      'clusterItemsToAdd': serializeClusterItemSet(clusters),
       'polygonsToAdd': serializePolygonSet(polygons),
       'polylinesToAdd': serializePolylineSet(polylines),
       'circlesToAdd': serializeCircleSet(circles),
@@ -569,6 +619,7 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
     PlatformViewCreatedCallback onPlatformViewCreated, {
     required CameraPosition initialCameraPosition,
     Set<Marker> markers = const <Marker>{},
+    Set<ClusterItem> clusters = const <ClusterItem>{},
     Set<Polygon> polygons = const <Polygon>{},
     Set<Polyline> polylines = const <Polyline>{},
     Set<Circle> circles = const <Circle>{},
@@ -582,6 +633,7 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
       initialCameraPosition: initialCameraPosition,
       textDirection: TextDirection.ltr,
       markers: markers,
+      clusters: clusters,
       polygons: polygons,
       polylines: polylines,
       circles: circles,

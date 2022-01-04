@@ -1,120 +1,26 @@
-// Copyright 2013 The Flutter Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
-import 'dart:ui' show hashValues, Offset;
-
-import 'package:flutter/foundation.dart' show ValueChanged, VoidCallback;
-import 'package:meta/meta.dart' show immutable;
-
+import 'package:flutter/material.dart';
 import 'types.dart';
 
 Object _offsetToJson(Offset offset) {
   return <Object>[offset.dx, offset.dy];
 }
 
-/// Text labels for a [Marker] info window.
-class InfoWindow {
-  /// Creates an immutable representation of a label on for [Marker].
-  const InfoWindow({
-    this.title,
-    this.snippet,
-    this.anchor = const Offset(0.5, 0.0),
-    this.onTap,
-  });
-
-  /// Text labels specifying that no text is to be displayed.
-  static const InfoWindow noText = InfoWindow();
-
-  /// Text displayed in an info window when the user taps the marker.
-  ///
-  /// A null value means no title.
-  final String? title;
-
-  /// Additional text displayed below the [title].
-  ///
-  /// A null value means no additional text.
-  final String? snippet;
-
-  /// The icon image point that will be the anchor of the info window when
-  /// displayed.
-  ///
-  /// The image point is specified in normalized coordinates: An anchor of
-  /// (0.0, 0.0) means the top left corner of the image. An anchor
-  /// of (1.0, 1.0) means the bottom right corner of the image.
-  final Offset anchor;
-
-  /// onTap callback for this [InfoWindow].
-  final VoidCallback? onTap;
-
-  /// Creates a new [InfoWindow] object whose values are the same as this instance,
-  /// unless overwritten by the specified parameters.
-  InfoWindow copyWith({
-    String? titleParam,
-    String? snippetParam,
-    Offset? anchorParam,
-    VoidCallback? onTapParam,
-  }) {
-    return InfoWindow(
-      title: titleParam ?? title,
-      snippet: snippetParam ?? snippet,
-      anchor: anchorParam ?? anchor,
-      onTap: onTapParam ?? onTap,
-    );
-  }
-
-  /// Converts [InfoWindow] into json
-  Object toJson() {
-    final Map<String, Object> json = <String, Object>{};
-
-    void addIfPresent(String fieldName, Object? value) {
-      if (value != null) {
-        json[fieldName] = value;
-      }
-    }
-
-    addIfPresent('title', title);
-    addIfPresent('snippet', snippet);
-    addIfPresent('anchor', _offsetToJson(anchor));
-
-    return json;
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    if (other.runtimeType != runtimeType) return false;
-    final InfoWindow typedOther = other as InfoWindow;
-    return title == typedOther.title &&
-        snippet == typedOther.snippet &&
-        anchor == typedOther.anchor;
-  }
-
-  @override
-  int get hashCode => hashValues(title.hashCode, snippet, anchor);
-
-  @override
-  String toString() {
-    return 'InfoWindow{title: $title, snippet: $snippet, anchor: $anchor}';
-  }
-}
-
 /// Uniquely identifies a [Marker] among [GoogleMap] markers.
 ///
 /// This does not have to be globally unique, only unique among the list.
 @immutable
-class MarkerId extends MapsObjectId<Marker> {
+class ClusterId extends MapsObjectId<ClusterItem> {
   /// Creates an immutable identifier for a [Marker].
-  const MarkerId(String value) : super(value);
+  const ClusterId(String value) : super(value);
 }
 
-/// Marks a geographical location on the map.
+/// Marks a cluster of geographical locations on the map.
 ///
-/// A marker icon is drawn oriented against the device's screen rather than
+/// A cluster icon is drawn oriented against the device's screen rather than
 /// the map's surface; that is, it will not necessarily change orientation
 /// due to map rotations, tilting, or zooming.
 @immutable
-class Marker implements MapsObject {
+class ClusterItem implements MapsObject {
   /// Creates a set of marker configuration options.
   ///
   /// Default marker options.
@@ -134,7 +40,7 @@ class Marker implements MapsObject {
   /// * is placed at the base of the drawing order; [zIndex] is 0.0
   /// * reports [onTap] events
   /// * reports [onDragEnd] events
-  const Marker({
+  const ClusterItem({
     required this.markerId,
     this.alpha = 1.0,
     this.anchor = const Offset(0.5, 1.0),
@@ -148,16 +54,13 @@ class Marker implements MapsObject {
     this.visible = true,
     this.zIndex = 0.0,
     this.onTap,
-    this.onDrag,
-    this.onDragStart,
-    this.onDragEnd,
   }) : assert(alpha == null || (0.0 <= alpha && alpha <= 1.0));
 
   /// Uniquely identifies a [Marker].
-  final MarkerId markerId;
+  final ClusterId markerId;
 
   @override
-  MarkerId get mapsId => markerId;
+  ClusterId get mapsId => markerId;
 
   /// The opacity of the marker, between 0.0 and 1.0 inclusive.
   ///
@@ -210,18 +113,9 @@ class Marker implements MapsObject {
   /// Callbacks to receive tap events for markers placed on this map.
   final VoidCallback? onTap;
 
-  /// Signature reporting the new [LatLng] at the start of a drag event.
-  final ValueChanged<LatLng>? onDragStart;
-
-  /// Signature reporting the new [LatLng] at the end of a drag event.
-  final ValueChanged<LatLng>? onDragEnd;
-
-  /// Signature reporting the new [LatLng] during the drag event.
-  final ValueChanged<LatLng>? onDrag;
-
   /// Creates a new [Marker] object whose values are the same as this instance,
   /// unless overwritten by the specified parameters.
-  Marker copyWith({
+  ClusterItem copyWith({
     double? alphaParam,
     Offset? anchorParam,
     bool? consumeTapEventsParam,
@@ -234,11 +128,8 @@ class Marker implements MapsObject {
     bool? visibleParam,
     double? zIndexParam,
     VoidCallback? onTapParam,
-    ValueChanged<LatLng>? onDragStartParam,
-    ValueChanged<LatLng>? onDragParam,
-    ValueChanged<LatLng>? onDragEndParam,
   }) {
-    return Marker(
+    return ClusterItem(
       markerId: markerId,
       alpha: alphaParam ?? alpha,
       anchor: anchorParam ?? anchor,
@@ -252,14 +143,11 @@ class Marker implements MapsObject {
       visible: visibleParam ?? visible,
       zIndex: zIndexParam ?? zIndex,
       onTap: onTapParam ?? onTap,
-      onDragStart: onDragStartParam ?? onDragStart,
-      onDrag: onDragParam ?? onDrag,
-      onDragEnd: onDragEndParam ?? onDragEnd,
     );
   }
 
   /// Creates a new [Marker] object whose values are the same as this instance.
-  Marker clone() => copyWith();
+  ClusterItem clone() => copyWith();
 
   /// Converts this object to something serializable in JSON.
   Object toJson() {
@@ -290,7 +178,7 @@ class Marker implements MapsObject {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other.runtimeType != runtimeType) return false;
-    final Marker typedOther = other as Marker;
+    final ClusterItem typedOther = other as ClusterItem;
     return markerId == typedOther.markerId &&
         alpha == typedOther.alpha &&
         anchor == typedOther.anchor &&
@@ -313,7 +201,6 @@ class Marker implements MapsObject {
     return 'Marker{markerId: $markerId, alpha: $alpha, anchor: $anchor, '
         'consumeTapEvents: $consumeTapEvents, draggable: $draggable, flat: $flat, '
         'icon: $icon, infoWindow: $infoWindow, position: $position, rotation: $rotation, '
-        'visible: $visible, zIndex: $zIndex, onTap: $onTap, onDragStart: $onDragStart, '
-        'onDrag: $onDrag, onDragEnd: $onDragEnd}';
+        'visible: $visible, zIndex: $zIndex, onTap: $onTap}';
   }
 }

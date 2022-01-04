@@ -19,6 +19,7 @@ import 'padding.dart';
 import 'page.dart';
 import 'place_circle.dart';
 import 'place_marker.dart';
+import 'place_clusters.dart';
 import 'place_polygon.dart';
 import 'place_polyline.dart';
 import 'scrolling_map.dart';
@@ -32,6 +33,7 @@ final List<GoogleMapExampleAppPage> _allPages = <GoogleMapExampleAppPage>[
   AnimateCameraPage(),
   MoveCameraPage(),
   PlaceMarkerPage(),
+  PlaceClusterPage(),
   MarkerIconsPage(),
   ScrollingMapPage(),
   PlacePolylinePage(),

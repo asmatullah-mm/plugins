@@ -77,6 +77,7 @@ class BuildViewGoogleMapsFlutterPlatform extends GoogleMapsFlutterPlatform {
     PlatformViewCreatedCallback onPlatformViewCreated, {
     required CameraPosition initialCameraPosition,
     Set<Marker> markers = const <Marker>{},
+    Set<ClusterItem> clusters = const <ClusterItem>{},
     Set<Polygon> polygons = const <Polygon>{},
     Set<Polyline> polylines = const <Polyline>{},
     Set<Circle> circles = const <Circle>{},

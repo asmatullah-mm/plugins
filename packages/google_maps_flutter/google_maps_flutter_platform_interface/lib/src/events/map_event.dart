@@ -132,6 +132,29 @@ class MarkerDragEndEvent extends _PositionedMapEvent<MarkerId> {
       : super(mapId, position, markerId);
 }
 
+/// An event fired when a Cluster is tapped.
+class ClusterTapEvent extends MapEvent<void> {
+  /// Build a ClusterTap Event triggered from the map represented by `mapId`.
+  ClusterTapEvent(int mapId) : super(mapId, null);
+}
+
+/// An event fired when a [ClusterItem] is tapped.
+class ClusterItemTapEvent extends MapEvent<ClusterId> {
+  /// Build a ClusterItemTap Event triggered from the map represented by `mapId`.
+  ///
+  /// The `value` of this event is a [ClusterId] object that represents the Cluster.
+  ClusterItemTapEvent(int mapId, ClusterId markerId) : super(mapId, markerId);
+}
+
+/// An event fired when a ClusterItemInfoWindowTa is tapped.
+class ClusterItemInfoWindowTapEvent extends MapEvent<ClusterId> {
+  /// Build a ClusterItemInfoWindowTap Event triggered from the map represented by `mapId`.
+  ///
+  /// The `value` of this event is a [ClusterId] object that represents the Cluster.
+  ClusterItemInfoWindowTapEvent(int mapId, ClusterId markerId)
+      : super(mapId, markerId);
+}
+
 /// An event fired when a [Polyline] is tapped.
 class PolylineTapEvent extends MapEvent<PolylineId> {
   /// Build an PolylineTap Event triggered from the map represented by `mapId`.

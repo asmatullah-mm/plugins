@@ -78,6 +78,15 @@ class GoogleMapController {
     GoogleMapsFlutterPlatform.instance.onMarkerDragEnd(mapId: mapId).listen(
         (MarkerDragEndEvent e) =>
             _googleMapState.onMarkerDragEnd(e.value, e.position));
+    GoogleMapsFlutterPlatform.instance
+        .onClusterTap(mapId: mapId)
+        .listen((ClusterTapEvent e) => _googleMapState.onCusterTap());
+    GoogleMapsFlutterPlatform.instance.onClusterItemTap(mapId: mapId).listen(
+        (ClusterItemTapEvent e) => _googleMapState.onCusterItemTap(e.value));
+    GoogleMapsFlutterPlatform.instance
+        .onClusterItemInfoWindowTap(mapId: mapId)
+        .listen((ClusterItemInfoWindowTapEvent e) =>
+            _googleMapState.onCusterItemInfoWindowTap(e.value));
     GoogleMapsFlutterPlatform.instance.onInfoWindowTap(mapId: mapId).listen(
         (InfoWindowTapEvent e) => _googleMapState.onInfoWindowTap(e.value));
     GoogleMapsFlutterPlatform.instance
@@ -118,6 +127,17 @@ class GoogleMapController {
     assert(markerUpdates != null);
     return GoogleMapsFlutterPlatform.instance
         .updateMarkers(markerUpdates, mapId: mapId);
+  }
+
+  /// Updates Clusters configuration.
+  ///
+  /// Change listeners are notified once the update has been made on the
+  /// platform side.
+  ///
+  /// The returned [Future] completes after listeners have been notified.
+  Future<void> _updateClusters(ClusterUpdates clusterUpdates) {
+    return GoogleMapsFlutterPlatform.instance
+        .updateClusters(clusterUpdates, mapId: mapId);
   }
 
   /// Updates polygon configuration.

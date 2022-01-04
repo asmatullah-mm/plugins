@@ -22,6 +22,7 @@ class GoogleMapBuilder implements GoogleMapOptionsSink {
   private boolean trafficEnabled = false;
   private boolean buildingsEnabled = true;
   private Object initialMarkers;
+  private Object initialClusters;
   private Object initialPolygons;
   private Object initialPolylines;
   private Object initialCircles;
@@ -43,6 +44,7 @@ class GoogleMapBuilder implements GoogleMapOptionsSink {
     controller.setBuildingsEnabled(buildingsEnabled);
     controller.setTrackCameraPosition(trackCameraPosition);
     controller.setInitialMarkers(initialMarkers);
+    controller.setInitialClusters(initialClusters);
     controller.setInitialPolygons(initialPolygons);
     controller.setInitialPolylines(initialPolylines);
     controller.setInitialCircles(initialCircles);
@@ -153,6 +155,11 @@ class GoogleMapBuilder implements GoogleMapOptionsSink {
   @Override
   public void setInitialMarkers(Object initialMarkers) {
     this.initialMarkers = initialMarkers;
+  }
+
+  @Override
+  public void setInitialClusters(Object initialClusters) {
+    this.initialClusters = initialClusters;
   }
 
   @Override
