@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 
 /** Controller of a single GoogleMaps MapView instance. */
+@SuppressWarnings("ConstantConditions")
 final class GoogleMapController
     implements DefaultLifecycleObserver,
         ActivityPluginBinding.OnSaveInstanceStateListener,
@@ -84,6 +85,7 @@ final class GoogleMapController
   private final TileOverlaysController tileOverlaysController;
   private List<Object> initialMarkers;
   private List<Object> initialClusters;
+  private List<Object> clusterIcons;
   private List<Object> initialPolygons;
   private List<Object> initialPolylines;
   private List<Object> initialCircles;
@@ -103,8 +105,8 @@ final class GoogleMapController
     methodChannel = new MethodChannel(binaryMessenger, "plugins.flutter.io/google_maps_" + id);
     methodChannel.setMethodCallHandler(this);
     this.lifecycleProvider = lifecycleProvider;
-    this.markersController = new MarkersController(methodChannel);
-    this.clustersController = new ClustersController(methodChannel);
+    this.markersController = new MarkersController(methodChannel, context);
+    this.clustersController = new ClustersController(methodChannel, context);
     this.polygonsController = new PolygonsController(methodChannel, density);
     this.polylinesController = new PolylinesController(methodChannel, density);
     this.circlesController = new CirclesController(methodChannel, density);
@@ -151,6 +153,7 @@ final class GoogleMapController
         markersController.addMarkersListener(this);
 
         clustersController.setGoogleMap(googleMap);
+        clustersController.setClusterIcons(this.clusterIcons);
         clustersController.setClusterManager(new ClusterManager<>(context, googleMap, markersController.getMarkerManager()));
         clustersController.setClusterListeners(this);
 
@@ -167,7 +170,7 @@ final class GoogleMapController
     }
 
   @Override
-  public void onMethodCall(MethodCall call, MethodChannel.Result result) {
+  public void onMethodCall(MethodCall call, @NonNull MethodChannel.Result result) {
     switch (call.method) {
       case "map#waitForMap":
         if (googleMap != null) {
@@ -783,13 +786,20 @@ final class GoogleMapController
     }
   }
 
-    @Override
-    public void setInitialClusters(Object initialClusters) {
-        this.initialClusters = (List<Object>) initialClusters;
-        if (googleMap != null) {
-            updateInitialClusters();
-        }
+  @Override
+  public void setInitialClusters(Object initialClusters) {
+    ArrayList<?> clusters = (ArrayList<?>) initialClusters;
+    this.initialClusters = clusters != null ? new ArrayList<>(clusters) : null;
+    if (googleMap != null) {
+      updateInitialClusters();
     }
+  }
+
+  @Override
+  public void setClusterIcons(Object clusterIcons) {
+    ArrayList<?> icons = (ArrayList<?>) clusterIcons;
+    this.clusterIcons = icons != null ? new ArrayList<>(icons) : null;
+  }
 
   private void updateInitialMarkers() {
     markersController.addMarkers(initialMarkers);

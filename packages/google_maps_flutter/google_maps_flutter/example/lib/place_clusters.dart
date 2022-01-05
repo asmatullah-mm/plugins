@@ -10,6 +10,7 @@ import 'dart:ui';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import 'page.dart';
@@ -43,6 +44,8 @@ class PlaceMarkerBodyState extends State<PlaceMarkerBody> {
   MarkerId? selectedMarker;
   int _markerIdCounter = 1;
   LatLng? markerPosition;
+  BitmapDescriptor? clusterItemIcon;
+  List<ClusterIcon>? clusterIcons;
 
   void _onMapCreated(GoogleMapController controller) {
     this.controller = controller;
@@ -51,7 +54,46 @@ class PlaceMarkerBodyState extends State<PlaceMarkerBody> {
   @override
   void initState() {
     super.initState();
-    _initialClusterMarkers();
+  }
+
+  Future<void> _loadAssetImages() async {
+    if (clusterIcons == null && clusterItemIcon == null) {
+      try {
+        final ImageConfiguration clusterImageConfig =
+            createLocalImageConfiguration(
+          context,
+        );
+        final ImageConfiguration clusterItemImageConfig =
+            createLocalImageConfiguration(
+          context,
+          size: Size.square(12),
+        );
+        clusterIcons = [];
+        await BitmapDescriptor.fromAssetImage(
+                clusterImageConfig, 'assets/cluster_icon1.png')
+            .then((icon) {
+          clusterIcons!.add(ClusterIcon(icon: icon, bucket: BucketSize.SMALL));
+        });
+        await BitmapDescriptor.fromAssetImage(
+                clusterImageConfig, 'assets/cluster_icon2.png')
+            .then((icon) {
+          clusterIcons!.add(ClusterIcon(icon: icon, bucket: BucketSize.MEDIUM));
+        });
+        await BitmapDescriptor.fromAssetImage(
+                clusterImageConfig, 'assets/cluster_icon3.png')
+            .then((icon) {
+          clusterIcons!.add(ClusterIcon(icon: icon, bucket: BucketSize.LARGE));
+        });
+        await BitmapDescriptor.fromAssetImage(
+                clusterItemImageConfig, 'assets/cluster_icon1.png')
+            .then((icon) {
+          clusterItemIcon = icon;
+        });
+      } catch (e) {
+        print(e);
+      }
+      _initialClusterMarkers();
+    }
   }
 
   void _initialClusterMarkers() {
@@ -59,18 +101,20 @@ class PlaceMarkerBodyState extends State<PlaceMarkerBody> {
     while (markerCount < 50) {
       markerCount++;
 
-      final String markerIdVal = 'cluster_marker_id_$markerCount';
-      final ClusterId clusterId = ClusterId(markerIdVal);
+      final String clusterIdVal = 'cluster_id_$markerCount';
+      final ClusterId clusterId = ClusterId(clusterIdVal);
 
       final ClusterItem clusterItem = ClusterItem(
-        icon: BitmapDescriptor.defaultMarkerWithHue(160),
+        icon: clusterItemIcon ?? BitmapDescriptor.defaultMarker,
+        label: "\$245k",
         markerId: clusterId,
-        position: getRandomLocation(radius: 10000),
-        infoWindow: InfoWindow(title: markerIdVal, snippet: '*'),
+        position: getRandomLocation(radius: 100000),
+        infoWindow: InfoWindow(title: clusterIdVal, snippet: '*'),
         onTap: () {},
       );
       clusterItems[clusterId] = clusterItem;
     }
+    setState(() {});
   }
 
   LatLng getRandomLocation({
@@ -346,6 +390,7 @@ class PlaceMarkerBodyState extends State<PlaceMarkerBody> {
 
   @override
   Widget build(BuildContext context) {
+    _loadAssetImages();
     final MarkerId? selectedId = selectedMarker;
     return Stack(children: [
       Column(
@@ -353,15 +398,18 @@ class PlaceMarkerBodyState extends State<PlaceMarkerBody> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Expanded(
-            child: GoogleMap(
-              onMapCreated: _onMapCreated,
-              initialCameraPosition: const CameraPosition(
-                target: LatLng(-33.852, 151.211),
-                zoom: 11.0,
-              ),
-              clusterItems: Set<ClusterItem>.of(clusterItems.values),
-              markers: Set<Marker>.of(markers.values),
-            ),
+            child: clusterItemIcon != null
+                ? GoogleMap(
+                    onMapCreated: _onMapCreated,
+                    initialCameraPosition: const CameraPosition(
+                      target: LatLng(-33.852, 151.211),
+                      zoom: 11.0,
+                    ),
+                    clusterIcons: clusterIcons!,
+                    clusterItems: Set<ClusterItem>.of(clusterItems.values),
+                    markers: Set<Marker>.of(markers.values),
+                  )
+                : SizedBox.shrink(),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,

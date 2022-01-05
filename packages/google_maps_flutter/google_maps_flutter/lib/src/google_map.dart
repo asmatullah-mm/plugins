@@ -107,6 +107,7 @@ class GoogleMap extends StatefulWidget {
     this.trafficEnabled = false,
     this.buildingsEnabled = true,
     this.markers = const <Marker>{},
+    this.clusterIcons = const <ClusterIcon>[],
     this.clusterItems = const <ClusterItem>{},
     this.onClusterTap,
     this.polygons = const <Polygon>{},
@@ -180,6 +181,9 @@ class GoogleMap extends StatefulWidget {
 
   /// Markers to be placed on the map.
   final Set<Marker> markers;
+
+  /// Markers to be placed on the map.
+  final List<ClusterIcon> clusterIcons;
 
   /// Cluster Items to be placed on the map.
   final Set<ClusterItem> clusterItems;
@@ -312,6 +316,7 @@ class _GoogleMapState extends State<GoogleMap> {
           TextDirection.ltr,
       initialCameraPosition: widget.initialCameraPosition,
       markers: widget.markers,
+      clusterIcons: widget.clusterIcons,
       clusters: widget.clusterItems,
       polygons: widget.polygons,
       polylines: widget.polylines,

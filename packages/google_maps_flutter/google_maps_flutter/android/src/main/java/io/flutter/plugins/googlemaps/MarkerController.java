@@ -4,6 +4,7 @@
 
 package io.flutter.plugins.googlemaps;
 
+import android.graphics.Bitmap;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -14,6 +15,8 @@ class MarkerController implements MarkerOptionsSink {
   private final Marker marker;
   private final String googleMapsMarkerId;
   private boolean consumeTapEvents;
+  private String label;
+  private Bitmap customIcon;
 
   MarkerController(Marker marker, boolean consumeTapEvents) {
     this.marker = marker;
@@ -48,6 +51,16 @@ class MarkerController implements MarkerOptionsSink {
   @Override
   public void setFlat(boolean flat) {
     marker.setFlat(flat);
+  }
+
+  @Override
+  public void setLabel(String label) {
+    this.label = label;
+  }
+
+  @Override
+  public void setCustomIcon(Bitmap bitmap) {
+    this.customIcon = bitmap;
   }
 
   @Override

@@ -5,7 +5,91 @@ Object _offsetToJson(Offset offset) {
   return <Object>[offset.dx, offset.dy];
 }
 
-/// Uniquely identifies a [Marker] among [GoogleMap] markers.
+/// Bucket size for cluster icons based on cluster size.
+enum BucketSize {
+  /// SMALL Icon for cluster
+  SMALL,
+
+  /// MEDIUM Icon for cluster
+  MEDIUM,
+
+  /// LARGE Icon for cluster
+  LARGE
+}
+
+/// Cluster Icons for clusters.
+class ClusterIcon {
+  /// Creates an immutable representation of a label on for [Marker].
+  const ClusterIcon({
+    required this.icon,
+    required this.bucket,
+  });
+
+  /// A description of the bitmap used to draw the marker icon.
+  final BitmapDescriptor icon;
+
+  /// Bucket size for cluster [title].
+  ///
+  /// A null value means no additional text.
+  final BucketSize bucket;
+
+  /// Creates a new [ClusterIcon] object whose values are the same as this instance,
+  /// unless overwritten by the specified parameters.
+  ClusterIcon copyWith({
+    BitmapDescriptor? iconParam,
+    BucketSize? bucketParam,
+  }) {
+    return ClusterIcon(
+      icon: iconParam ?? icon,
+      bucket: bucketParam ?? bucket,
+    );
+  }
+
+  /// Converts [ClusterIcon] into json
+  Object toJson() {
+    final Map<String, Object> json = <String, Object>{};
+
+    void addIfPresent(String fieldName, Object? value) {
+      if (value != null) {
+        json[fieldName] = value;
+      }
+    }
+
+    addIfPresent('icon', icon.toJson());
+    addIfPresent('bucket', _toInt(bucket));
+
+    return json;
+  }
+
+  int _toInt(BucketSize bucket) {
+    switch (bucket) {
+      case BucketSize.SMALL:
+        return 100;
+      case BucketSize.MEDIUM:
+        return 500;
+      case BucketSize.LARGE:
+        return 1000;
+    }
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other.runtimeType != runtimeType) return false;
+    final ClusterIcon typedOther = other as ClusterIcon;
+    return icon == typedOther.icon && bucket == typedOther.bucket;
+  }
+
+  @override
+  int get hashCode => hashValues(icon.hashCode, bucket);
+
+  @override
+  String toString() {
+    return 'ClusterIcon{icon: $icon, bucket: $bucket}';
+  }
+}
+
+/// Uniquely identifies a [ClusterItem] among [GoogleMap] markers.
 ///
 /// This does not have to be globally unique, only unique among the list.
 @immutable
@@ -43,6 +127,7 @@ class ClusterItem implements MapsObject {
   const ClusterItem({
     required this.markerId,
     this.alpha = 1.0,
+    this.label,
     this.anchor = const Offset(0.5, 1.0),
     this.consumeTapEvents = false,
     this.draggable = false,
@@ -61,6 +146,9 @@ class ClusterItem implements MapsObject {
 
   @override
   ClusterId get mapsId => markerId;
+
+  /// The label of the marker.
+  final String? label;
 
   /// The opacity of the marker, between 0.0 and 1.0 inclusive.
   ///
@@ -117,6 +205,7 @@ class ClusterItem implements MapsObject {
   /// unless overwritten by the specified parameters.
   ClusterItem copyWith({
     double? alphaParam,
+    String? labelParam,
     Offset? anchorParam,
     bool? consumeTapEventsParam,
     bool? draggableParam,
@@ -132,6 +221,7 @@ class ClusterItem implements MapsObject {
     return ClusterItem(
       markerId: markerId,
       alpha: alphaParam ?? alpha,
+      label: labelParam ?? label,
       anchor: anchorParam ?? anchor,
       consumeTapEvents: consumeTapEventsParam ?? consumeTapEvents,
       draggable: draggableParam ?? draggable,
@@ -161,6 +251,7 @@ class ClusterItem implements MapsObject {
 
     addIfPresent('markerId', markerId.value);
     addIfPresent('alpha', alpha);
+    addIfPresent('label', label);
     addIfPresent('anchor', _offsetToJson(anchor));
     addIfPresent('consumeTapEvents', consumeTapEvents);
     addIfPresent('draggable', draggable);
@@ -181,6 +272,7 @@ class ClusterItem implements MapsObject {
     final ClusterItem typedOther = other as ClusterItem;
     return markerId == typedOther.markerId &&
         alpha == typedOther.alpha &&
+        label == typedOther.label &&
         anchor == typedOther.anchor &&
         consumeTapEvents == typedOther.consumeTapEvents &&
         draggable == typedOther.draggable &&
@@ -198,7 +290,7 @@ class ClusterItem implements MapsObject {
 
   @override
   String toString() {
-    return 'Marker{markerId: $markerId, alpha: $alpha, anchor: $anchor, '
+    return 'Marker{markerId: $markerId, alpha: $alpha, label: $label, anchor: $anchor, '
         'consumeTapEvents: $consumeTapEvents, draggable: $draggable, flat: $flat, '
         'icon: $icon, infoWindow: $infoWindow, position: $position, rotation: $rotation, '
         'visible: $visible, zIndex: $zIndex, onTap: $onTap}';

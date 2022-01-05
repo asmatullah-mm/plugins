@@ -280,6 +280,7 @@ class TestGoogleMapsFlutterPlatform extends GoogleMapsFlutterPlatform {
     PlatformViewCreatedCallback onPlatformViewCreated, {
     required CameraPosition initialCameraPosition,
     Set<Marker> markers = const <Marker>{},
+    List<ClusterIcon> clusterIcons = const <ClusterIcon>[],
     Set<ClusterItem> clusters = const <ClusterItem>{},
     Set<Polygon> polygons = const <Polygon>{},
     Set<Polyline> polylines = const <Polyline>{},

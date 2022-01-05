@@ -4,6 +4,8 @@
 
 package io.flutter.plugins.googlemaps;
 
+import android.graphics.Bitmap;
+
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.LatLng;
 
@@ -18,6 +20,10 @@ interface MarkerOptionsSink {
   void setDraggable(boolean draggable);
 
   void setFlat(boolean flat);
+
+  void setLabel(String label);
+
+  void setCustomIcon(Bitmap bitmap);
 
   void setIcon(BitmapDescriptor bitmapDescriptor);
 

@@ -4,6 +4,7 @@
 
 package io.flutter.plugins.googlemaps;
 
+import android.graphics.Bitmap;
 import androidx.annotation.NonNull;
 
 import com.google.android.gms.maps.model.BitmapDescriptor;
@@ -18,6 +19,8 @@ public class MyClusterItem implements ClusterItem {
     private final String snippet;
     private final String googleMapsClusterItemId;
     private boolean consumeTapEvents;
+    private String label;
+    private Bitmap customIcon;
     private final BitmapDescriptor bitmapDescriptor;
 
     public MyClusterItem(
@@ -38,13 +41,17 @@ public class MyClusterItem implements ClusterItem {
             double lat,
             double lng,
             String title,
+            String label,
+            Bitmap customIcon,
             String snippet,
             String clusterItemId,
             boolean consumeTapEvents,
             BitmapDescriptor bitmapDescriptor) {
         this.position = new LatLng(lat, lng);
         this.title = title;
+        this.label = label;
         this.snippet = snippet;
+        this.customIcon = customIcon;
         this.googleMapsClusterItemId = clusterItemId;
         this.consumeTapEvents = consumeTapEvents;
         this.bitmapDescriptor = bitmapDescriptor;
@@ -82,4 +89,11 @@ public class MyClusterItem implements ClusterItem {
         return this.bitmapDescriptor;
     }
 
+    public String getLabel() {
+        return this.label;
+    }
+
+    public Bitmap getCustomIcon() {
+        return this.customIcon;
+    }
 }

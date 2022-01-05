@@ -4,6 +4,7 @@
 
 package io.flutter.plugins.googlemaps;
 
+import android.content.Context;
 import androidx.annotation.Nullable;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
@@ -23,14 +24,16 @@ class MarkersController {
   private final MethodChannel methodChannel;
   private MarkerManager markerManager;
   private GoogleMap googleMap;
+  private final Context context;
   private GoogleMap.OnMarkerClickListener onMarkerClickListener;
   private GoogleMap.OnMarkerDragListener onMarkerDragListener;
   private GoogleMap.OnInfoWindowClickListener onInfoWindowClickListener;
 
-  MarkersController(MethodChannel methodChannel) {
+  MarkersController(MethodChannel methodChannel, Context context) {
     this.markerIdToController = new HashMap<>();
     this.googleMapsMarkerIdToDartMarkerId = new HashMap<>();
     this.methodChannel = methodChannel;
+    this.context = context;
   }
 
   void setGoogleMap(GoogleMap googleMap) {
@@ -172,7 +175,7 @@ class MarkersController {
       return;
     }
     MarkerBuilder markerBuilder = new MarkerBuilder();
-    String markerId = Convert.interpretMarkerOptions(marker, markerBuilder);
+    String markerId = Convert.interpretMarkerOptions(marker, markerBuilder, context);
     MarkerOptions options = markerBuilder.build();
     addMarker(markerId, options, markerBuilder.consumeTapEvents());
   }
@@ -199,7 +202,7 @@ class MarkersController {
     String markerId = getMarkerId(marker);
     MarkerController markerController = markerIdToController.get(markerId);
     if (markerController != null) {
-      Convert.interpretMarkerOptions(marker, markerController);
+      Convert.interpretMarkerOptions(marker, markerController, context);
     }
   }
 

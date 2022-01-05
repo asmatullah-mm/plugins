@@ -4,9 +4,12 @@
 
 package io.flutter.plugins.googlemaps;
 
+import android.content.Context;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Point;
+
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.model.BitmapDescriptor;
@@ -24,7 +27,10 @@ import com.google.android.gms.maps.model.PatternItem;
 import com.google.android.gms.maps.model.RoundCap;
 import com.google.android.gms.maps.model.SquareCap;
 import com.google.android.gms.maps.model.Tile;
+
 import io.flutter.view.FlutterMain;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -69,6 +75,30 @@ class Convert {
     }
   }
 
+  // TODO(hamdikahloun): FlutterMain has been deprecated and should be replaced with FlutterLoader
+  //  when it's available in Stable channel: https://github.com/flutter/flutter/issues/70923.
+  @SuppressWarnings("deprecation")
+  private static Bitmap toBitmapFromDart(Object o, Context context) {
+    final List<?> data = toList(o);
+    switch (toString(data.get(0))) {
+      case "fromAssetImage":
+        if (data.size() == 3) {
+          String asset = FlutterMain.getLookupKeyForAsset(toString(data.get(1)));
+          try {
+            AssetManager assetManager = context.getAssets();
+            return BitmapFactory.decodeStream(assetManager.open(asset));
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        }
+        return null;
+      case "fromBytes":
+        return getBitmapOnlyFromBytes(data);
+      default:
+        return null;
+    }
+  }
+
   private static BitmapDescriptor getBitmapFromBytes(List<?> data) {
     if (data.size() == 2) {
       try {
@@ -81,6 +111,20 @@ class Convert {
       throw new IllegalArgumentException(
           "fromBytes should have exactly one argument, interpretTileOverlayOptions the bytes. Got: "
               + data.size());
+    }
+  }
+
+  private static Bitmap getBitmapOnlyFromBytes(List<?> data) {
+    if (data.size() == 2) {
+      try {
+        return toBitmap(data.get(1));
+      } catch (Exception e) {
+        throw new IllegalArgumentException("Unable to interpret bytes as a valid image.", e);
+      }
+    } else {
+      throw new IllegalArgumentException(
+              "fromBytes should have exactly one argument, interpretTileOverlayOptions the bytes. Got: "
+                      + data.size());
     }
   }
 
@@ -379,7 +423,7 @@ class Convert {
   }
 
   /** Returns the dartMarkerId of the interpreted marker. */
-  static String interpretMarkerOptions(Object o, MarkerOptionsSink sink) {
+  static String interpretMarkerOptions(Object o, MarkerOptionsSink sink, Context context) {
     final Map<?, ?> data = toMap(o);
     final Object alpha = data.get("alpha");
     if (alpha != null) {
@@ -389,6 +433,14 @@ class Convert {
     if (anchor != null) {
       final List<?> anchorData = toList(anchor);
       sink.setAnchor(toFloat(anchorData.get(0)), toFloat(anchorData.get(1)));
+    }
+    final Object label = data.get("label");
+    if (label != null) {
+      sink.setLabel(toString(label));
+      final Object icon = data.get("icon");
+      if (icon != null) {
+        sink.setCustomIcon(toBitmapFromDart(icon, context));
+      }
     }
     final Object consumeTapEvents = data.get("consumeTapEvents");
     if (consumeTapEvents != null) {
@@ -432,6 +484,19 @@ class Convert {
       throw new IllegalArgumentException("markerId was null");
     } else {
       return markerId;
+    }
+  }
+
+  /** Returns the dartMarkerLabel of the interpreted marker. */
+  static void interpretClusterIcons(Object o, List<Bitmap> icons, List<Integer> buckets, Context context) {
+    final Map<?, ?> data = toMap(o);
+    final Object icon = data.get("icon");
+    final Object bucket = data.get("bucket");
+    if (icon != null && bucket != null) {
+      Bitmap bitmap = toBitmapFromDart(icon, context);
+      int bucketSize = toInt(bucket);
+      icons.add(bitmap);
+      buckets.add(bucketSize);
     }
   }
 

@@ -10,3 +10,8 @@ Map<ClusterId, ClusterItem> keyByClusterItemId(Iterable<ClusterItem> markers) {
 Object serializeClusterItemSet(Set<ClusterItem> markers) {
   return serializeMapsObjectSet(markers);
 }
+
+/// Converts a List of [ClusterIcon] into something serializable in JSON.
+Object serializeClusterIconsList(List<ClusterIcon> clusterIcons) {
+  return clusterIcons.map((ClusterIcon e) => e.toJson()).toList();
+}

@@ -384,6 +384,7 @@ abstract class GoogleMapsFlutterPlatform extends PlatformInterface {
     PlatformViewCreatedCallback onPlatformViewCreated, {
     required CameraPosition initialCameraPosition,
     Set<Marker> markers = const <Marker>{},
+    List<ClusterIcon> clusterIcons = const <ClusterIcon>[],
     Set<ClusterItem> clusters = const <ClusterItem>{},
     Set<Polygon> polygons = const <Polygon>{},
     Set<Polyline> polylines = const <Polyline>{},
@@ -413,6 +414,7 @@ abstract class GoogleMapsFlutterPlatform extends PlatformInterface {
     required CameraPosition initialCameraPosition,
     required TextDirection textDirection,
     Set<Marker> markers = const <Marker>{},
+    List<ClusterIcon> clusterIcons = const <ClusterIcon>[],
     Set<ClusterItem> clusters = const <ClusterItem>{},
     Set<Polygon> polygons = const <Polygon>{},
     Set<Polyline> polylines = const <Polyline>{},
@@ -426,6 +428,7 @@ abstract class GoogleMapsFlutterPlatform extends PlatformInterface {
       onPlatformViewCreated,
       initialCameraPosition: initialCameraPosition,
       markers: markers,
+      clusterIcons: clusterIcons,
       clusters: clusters,
       polygons: polygons,
       polylines: polylines,

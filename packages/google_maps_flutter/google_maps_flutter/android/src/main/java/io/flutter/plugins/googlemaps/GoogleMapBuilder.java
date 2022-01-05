@@ -6,10 +6,13 @@ package io.flutter.plugins.googlemaps;
 
 import android.content.Context;
 import android.graphics.Rect;
+
 import com.google.android.gms.maps.GoogleMapOptions;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLngBounds;
+
 import io.flutter.plugin.common.BinaryMessenger;
+
 import java.util.List;
 import java.util.Map;
 
@@ -23,6 +26,7 @@ class GoogleMapBuilder implements GoogleMapOptionsSink {
   private boolean buildingsEnabled = true;
   private Object initialMarkers;
   private Object initialClusters;
+  private Object clusterIcons;
   private Object initialPolygons;
   private Object initialPolylines;
   private Object initialCircles;
@@ -45,6 +49,7 @@ class GoogleMapBuilder implements GoogleMapOptionsSink {
     controller.setTrackCameraPosition(trackCameraPosition);
     controller.setInitialMarkers(initialMarkers);
     controller.setInitialClusters(initialClusters);
+    controller.setClusterIcons(clusterIcons);
     controller.setInitialPolygons(initialPolygons);
     controller.setInitialPolylines(initialPolylines);
     controller.setInitialCircles(initialCircles);
@@ -160,6 +165,11 @@ class GoogleMapBuilder implements GoogleMapOptionsSink {
   @Override
   public void setInitialClusters(Object initialClusters) {
     this.initialClusters = initialClusters;
+  }
+
+  @Override
+  public void setClusterIcons(Object clusterIcons) {
+    this.clusterIcons = clusterIcons;
   }
 
   @Override
