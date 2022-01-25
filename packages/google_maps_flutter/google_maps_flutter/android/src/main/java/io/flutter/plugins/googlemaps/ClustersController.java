@@ -267,7 +267,7 @@ class ClustersController {
         }
 
         private BitmapDescriptor getItemIcon(String label, @NonNull Bitmap bitmap) {
-            if (label != null) {
+            if (label != null && !label.equals("")) {
                 mMarkerImageView.setImageBitmap(bitmap);
                 bitmap = mMarkerIconGenerator.makeIcon(label);
             }
@@ -308,9 +308,8 @@ class ClustersController {
                 if (clusterSize < bucketList.get(i)) {
                     mClusterImageView.setImageBitmap(clusterIcon.getIcon().get(i));
                     break;
-                }
-                if (i == bucketList.size() - 1) {
-                    mClusterImageView.setImageBitmap(clusterIcon.getIcon().get(bucketList.size() - 1));
+                } else if (i == bucketList.size() - 1) {
+                    mClusterImageView.setImageBitmap(clusterIcon.getIcon().get(i));
                 }
             }
             Bitmap icon = mClusterIconGenerator.makeIcon(String.valueOf(cluster.getSize()));

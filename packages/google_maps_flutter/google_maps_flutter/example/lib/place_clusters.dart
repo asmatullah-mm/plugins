@@ -70,22 +70,22 @@ class PlaceMarkerBodyState extends State<PlaceMarkerBody> {
         );
         clusterIcons = [];
         await BitmapDescriptor.fromAssetImage(
-                clusterImageConfig, 'assets/cluster_icon1.png')
+                clusterImageConfig, 'assets/cluster1.png')
             .then((icon) {
           clusterIcons!.add(ClusterIcon(icon: icon, bucket: BucketSize.SMALL));
         });
         await BitmapDescriptor.fromAssetImage(
-                clusterImageConfig, 'assets/cluster_icon2.png')
+                clusterImageConfig, 'assets/cluster2.png')
             .then((icon) {
           clusterIcons!.add(ClusterIcon(icon: icon, bucket: BucketSize.MEDIUM));
         });
         await BitmapDescriptor.fromAssetImage(
-                clusterImageConfig, 'assets/cluster_icon3.png')
+                clusterImageConfig, 'assets/cluster3.png')
             .then((icon) {
           clusterIcons!.add(ClusterIcon(icon: icon, bucket: BucketSize.LARGE));
         });
         await BitmapDescriptor.fromAssetImage(
-                clusterItemImageConfig, 'assets/cluster_icon1.png')
+                clusterItemImageConfig, 'assets/marker.png')
             .then((icon) {
           clusterItemIcon = icon;
         });

@@ -437,10 +437,10 @@ class Convert {
     final Object label = data.get("label");
     if (label != null) {
       sink.setLabel(toString(label));
-      final Object icon = data.get("icon");
-      if (icon != null) {
-        sink.setCustomIcon(toBitmapFromDart(icon, context));
-      }
+    }
+    final Object customIcon = data.get("icon");
+    if (customIcon != null) {
+      sink.setCustomIcon(toBitmapFromDart(customIcon, context));
     }
     final Object consumeTapEvents = data.get("consumeTapEvents");
     if (consumeTapEvents != null) {
