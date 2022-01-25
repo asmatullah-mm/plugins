@@ -6,8 +6,10 @@
 #import <GoogleMaps/GoogleMaps.h>
 #import "GoogleMapCircleController.h"
 #import "GoogleMapMarkerController.h"
+#import "GoogleMapClusterController.h"
 #import "GoogleMapPolygonController.h"
 #import "GoogleMapPolylineController.h"
+@import GoogleMapsUtils;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -33,7 +35,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 // Defines map overlay controllable from Flutter.
 @interface FLTGoogleMapController
-    : NSObject <GMSMapViewDelegate, FLTGoogleMapOptionsSink, FlutterPlatformView>
+: NSObject <GMSMapViewDelegate, FLTGoogleMapOptionsSink, FlutterPlatformView,
+                                  GMUClusterRendererDelegate, GMUClusterManagerDelegate>
 - (instancetype)initWithFrame:(CGRect)frame
                viewIdentifier:(int64_t)viewId
                     arguments:(nullable id)args

@@ -5,6 +5,31 @@
 #import "GoogleMapController.h"
 #import "FLTGoogleMapTileOverlayController.h"
 #import "JsonConversions.h"
+@import GoogleMaps;
+@import GoogleMapsUtils;
+
+static UIImage* scaleImage(UIImage* image, NSNumber* scaleParam) {
+  double scale = 1.0;
+  if ([scaleParam isKindOfClass:[NSNumber class]]) {
+    scale = scaleParam.doubleValue;
+  }
+  if (fabs(scale - 1) > 1e-3) {
+    return [UIImage imageWithCGImage:[image CGImage]
+                                   scale:(image.scale * scale)
+                             orientation:(image.imageOrientation)];
+  }
+  return image;
+}
+
+static CLLocationCoordinate2D ToLocation(NSArray* data) {
+  return [FLTGoogleMapJsonConversions toLocation:data];
+}
+
+@interface FLTGoogleMapController ()<GMUClusterManagerDelegate, GMSMapViewDelegate,
+GMUClusterRendererDelegate>
+
+@property (strong, nonatomic) NSArray* imagesArray;
+@end
 
 #pragma mark - Conversion of JSON-like values sent via platform channels. Forward declarations.
 
@@ -45,18 +70,75 @@ static double ToDouble(NSNumber* data) { return [FLTGoogleMapJsonConversions toD
 }
 @end
 
+static UIImage* ExtractIcon(NSObject<FlutterPluginRegistrar>* registrar, NSArray* iconData) {
+  UIImage* image;
+  if ([iconData.firstObject isEqualToString:@"defaultMarker"]) {
+    CGFloat hue = (iconData.count == 1) ? 0.0f : ToDouble(iconData[1]);
+    image = [GMSMarker markerImageWithColor:[UIColor colorWithHue:hue / 360.0
+                                                       saturation:1.0
+                                                       brightness:0.7
+                                                            alpha:1.0]];
+  } else if ([iconData.firstObject isEqualToString:@"fromAsset"]) {
+    if (iconData.count == 2) {
+      image = [UIImage imageNamed:[registrar lookupKeyForAsset:iconData[1]]];
+    } else {
+      image = [UIImage imageNamed:[registrar lookupKeyForAsset:iconData[1]
+                                                     fromPackage:iconData[2]]];
+    }
+  } else if ([iconData.firstObject isEqualToString:@"fromAssetImage"]) {
+    if (iconData.count == 3) {
+      image = [UIImage imageNamed:[registrar lookupKeyForAsset:iconData[1]]];
+      NSNumber* scaleParam = iconData[2];
+      image = scaleImage(image, scaleParam);
+    } else {
+      NSString* error =
+      [NSString stringWithFormat:@"'fromAssetImage' should have exactly 3 arguments. Got: %lu",
+             (unsigned long)iconData.count];
+      NSException* exception = [NSException exceptionWithName:@"InvalidBitmapDescriptor"
+                                                             reason:error
+                                                           userInfo:nil];
+      @throw exception;
+    }
+  } else if ([iconData[0] isEqualToString:@"fromBytes"]) {
+    if (iconData.count == 2) {
+      @try {
+        FlutterStandardTypedData* byteData = iconData[1];
+        CGFloat screenScale = [[UIScreen mainScreen] scale];
+        image = [UIImage imageWithData:[byteData data] scale:screenScale];
+      } @catch (NSException* exception) {
+        @throw [NSException exceptionWithName:@"InvalidByteDescriptor"
+                                         reason:@"Unable to interpret bytes as a valid image."
+                                       userInfo:nil];
+      }
+    } else {
+      NSString* error = [NSString
+                 stringWithFormat:@"fromBytes should have exactly one argument, the bytes. Got: %lu",
+                  (unsigned long)iconData.count];
+      NSException* exception = [NSException exceptionWithName:@"InvalidByteDescriptor"
+                                                         reason:error
+                                                        userInfo:nil];
+      @throw exception;
+    }
+  }
+  return image;
+}
+
 @implementation FLTGoogleMapController {
   GMSMapView* _mapView;
+  GMUClusterManager *_clusterManager;
   int64_t _viewId;
   FlutterMethodChannel* _channel;
   BOOL _trackCameraPosition;
   NSObject<FlutterPluginRegistrar>* _registrar;
   BOOL _cameraDidInitialSetup;
   FLTMarkersController* _markersController;
+  FLTClustersController* _clustersController;
   FLTPolygonsController* _polygonsController;
   FLTPolylinesController* _polylinesController;
   FLTCirclesController* _circlesController;
   FLTTileOverlaysController* _tileOverlaysController;
+  NSMutableArray *_clusterImagesArray;
+  NSMutableArray *_clusterSizesArray;
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
@@ -84,8 +166,27 @@ static double ToDouble(NSNumber* data) { return [FLTGoogleMapJsonConversions toD
     _mapView.delegate = weakSelf;
     _registrar = registrar;
     _cameraDidInitialSetup = NO;
+    _clusterImagesArray = [[NSMutableArray alloc]init];
+    _clusterSizesArray = [[NSMutableArray alloc]init];
+        
+    id<GMUClusterAlgorithm> algorithm = [self algorithmForMode: kClusterAlgorithmQuadTreeBased];
+    id<GMUClusterIconGenerator> iconGenerator = [self defaultIconGenerator];
+    GMUDefaultClusterRenderer *renderer =
+    [[GMUDefaultClusterRenderer alloc] initWithMapView:_mapView
+                                      clusterIconGenerator:iconGenerator];
+    renderer.delegate = self;
+    renderer.animationDuration = 0.2;
+    renderer.minimumClusterSize = 2;
+    renderer.maximumClusterZoom = 20;
+    _clusterManager =
+    [[GMUClusterManager alloc] initWithMap:_mapView algorithm:algorithm renderer:renderer];
+        
     _markersController = [[FLTMarkersController alloc] init:_channel
                                                     mapView:_mapView
+                                                  registrar:registrar];
+    _clustersController = [[FLTClustersController alloc] init:_channel
+                                                    mapView:_mapView
+                                                  clusterManager:_clusterManager
                                                   registrar:registrar];
     _polygonsController = [[FLTPolygonsController alloc] init:_channel
                                                       mapView:_mapView
@@ -103,6 +204,25 @@ static double ToDouble(NSNumber* data) { return [FLTGoogleMapJsonConversions toD
     if ([markersToAdd isKindOfClass:[NSArray class]]) {
       [_markersController addMarkers:markersToAdd];
     }
+    id clusterIconsToAdd = args[@"clusterIconsToAdd"];
+    if ([clusterIconsToAdd isKindOfClass:[NSArray class]]) {
+      for (NSDictionary* clusterIcon in clusterIconsToAdd) {
+        NSArray* icon = clusterIcon[@"icon"];
+        if (icon) {
+          UIImage* image = ExtractIcon(registrar, icon);
+          [_clusterImagesArray addObject:image];
+        }
+        NSNumber* bucket = clusterIcon[@"bucket"];
+        if (bucket != nil) {
+          [_clusterSizesArray addObject:bucket];
+        }
+      }
+    }
+    id clustersToAdd = args[@"clusterItemsToAdd"];
+    if ([clustersToAdd isKindOfClass:[NSArray class]]) {
+      [_clustersController addClusterItems:clustersToAdd];
+      [_clusterManager cluster];
+    }
     id polygonsToAdd = args[@"polygonsToAdd"];
     if ([polygonsToAdd isKindOfClass:[NSArray class]]) {
       [_polygonsController addPolygons:polygonsToAdd];
@@ -119,9 +239,81 @@ static double ToDouble(NSNumber* data) { return [FLTGoogleMapJsonConversions toD
     if ([tileOverlaysToAdd isKindOfClass:[NSArray class]]) {
       [_tileOverlaysController addTileOverlays:tileOverlaysToAdd];
     }
+    [_clusterManager setDelegate:self mapDelegate:self];
   }
   return self;
 }
+#pragma mark - <GMUClusterRendererDelegate>
+
+- (void)renderer:(id<GMUClusterRenderer>)renderer willRenderMarker:(GMSMarker *)marker {
+    
+    if ([marker.userData isKindOfClass:[GMSMarker class]]) {
+        
+    } else if ([marker.userData conformsToProtocol:@protocol(GMUCluster)]) {
+        id<GMUCluster> userData = marker.userData;
+        for( int i = 0; i < _clusterSizesArray.count; i++ ) {
+            int count = (int)userData.count;
+            int count1 = (int) [[_clusterSizesArray objectAtIndex:i] integerValue];
+            if (count<count1)
+            {
+                marker.icon = [self drawFront:_clusterImagesArray[i] text:[NSString stringWithFormat:@"%@", @(userData.count)]];
+                break;
+            }
+            if (i == _clusterSizesArray.count-1)
+            {
+                marker.icon = [self drawFront:_clusterImagesArray.lastObject text:[NSString stringWithFormat:@"%@", @(userData.count)]];
+                break;
+            }
+        }
+    }
+}
+#pragma mark -
+- (UIImage *)drawFront:(UIImage *)image text:(NSString *)text {
+    UIGraphicsBeginImageContextWithOptions(image.size, false, [UIScreen mainScreen].scale);
+    [image drawInRect:CGRectMake(0, 0, image.size.width, image.size.height)];
+    UITextView *myText = [[UITextView alloc] init];
+    [myText setFont:[UIFont boldSystemFontOfSize:14]];
+    myText.textColor = [UIColor whiteColor];
+    myText.text = text;
+    myText.backgroundColor = [UIColor clearColor];
+    
+    CGSize maximumLabelSize = CGSizeMake(image.size.width,image.size.height);
+    CGSize expectedLabelSize = [myText.text sizeWithFont:myText.font
+                                       constrainedToSize:maximumLabelSize
+                                           lineBreakMode:UILineBreakModeWordWrap];
+    
+    myText.frame = CGRectMake((image.size.width / 2) - (expectedLabelSize.width / 2),
+                              (image.size.height / 2) - (expectedLabelSize.height / 2),
+                              image.size.width,
+                              image.size.height);
+    
+    [[UIColor whiteColor] set];
+    [myText.text drawInRect:myText.frame withFont:myText.font];
+    UIImage *myNewImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return myNewImage;
+}
+- (id<GMUClusterIconGenerator>)defaultIconGenerator {
+    return [[GMUDefaultClusterIconGenerator alloc] init];
+}
+typedef NS_ENUM(NSInteger, ClusterAlgorithmMode) {
+    kClusterAlgorithmGridBased,
+    kClusterAlgorithmQuadTreeBased,
+};
+- (id<GMUClusterAlgorithm>)algorithmForMode:(ClusterAlgorithmMode)mode {
+    switch (mode) {
+        case kClusterAlgorithmGridBased:
+            return [[GMUGridBasedClusterAlgorithm alloc] init];
+            
+        case kClusterAlgorithmQuadTreeBased:
+            return [[GMUNonHierarchicalDistanceBasedAlgorithm alloc] init];
+            
+        default:
+            assert(false);
+            break;
+    }
+}
+
 
 - (UIView*)view {
   [_mapView addObserver:self forKeyPath:@"frame" options:0 context:nil];
@@ -236,6 +428,12 @@ static double ToDouble(NSNumber* data) { return [FLTGoogleMapJsonConversions toD
     id markerIdsToRemove = call.arguments[@"markerIdsToRemove"];
     if ([markerIdsToRemove isKindOfClass:[NSArray class]]) {
       [_markersController removeMarkerIds:markerIdsToRemove];
+    }
+    result(nil);
+  } else if ([call.method isEqualToString:@"cluster#update"]) {
+    id clusterItemsToAdd = call.arguments[@"clusterItemsToAdd"];
+    if ([clusterItemsToAdd isKindOfClass:[NSArray class]]) {
+      [_clustersController addClusterItems:clusterItemsToAdd];
     }
     result(nil);
   } else if ([call.method isEqualToString:@"markers#showInfoWindow"]) {
@@ -483,6 +681,13 @@ static double ToDouble(NSNumber* data) { return [FLTGoogleMapJsonConversions toD
   }
 }
 
+#pragma mark GMUClusterManagerDelegate
+
+// Zooms in on the cluster being tapped.
+- (BOOL)clusterManager:(GMUClusterManager *)clusterManager didTapCluster:(id<GMUCluster>)cluster {
+  return [_clustersController onClusterTap:cluster];
+}
+
 #pragma mark - GMSMapViewDelegate methods
 
 - (void)mapView:(GMSMapView*)mapView willMove:(BOOL)gesture {
@@ -499,8 +704,11 @@ static double ToDouble(NSNumber* data) { return [FLTGoogleMapJsonConversions toD
   [_channel invokeMethod:@"camera#onIdle" arguments:@{}];
 }
 
-- (BOOL)mapView:(GMSMapView*)mapView didTapMarker:(GMSMarker*)marker {
+- (BOOL)mapView:(GMSMapView *)mapView didTapMarker:(GMSMarker*)marker {
   NSString* markerId = marker.userData[0];
+  if ([marker.userData conformsToProtocol:@protocol(GMUClusterItem)]) {
+    return [_clustersController onClusterItemTap:markerId];
+  }
   return [_markersController onMarkerTap:markerId];
 }
 
@@ -542,6 +750,13 @@ static double ToDouble(NSNumber* data) { return [FLTGoogleMapJsonConversions toD
   [_channel invokeMethod:@"map#onLongPress" arguments:@{@"position" : LocationToJson(coordinate)}];
 }
 
++ (CLLocationCoordinate2D)getPosition:(NSDictionary*)marker {
+  NSArray* position = marker[@"position"];
+  return ToLocation(position);
+}
++ (NSString*)getMarkerId:(NSDictionary*)marker {
+  return marker[@"markerId"];
+}
 @end
 
 #pragma mark - Implementations of JSON conversion functions.
@@ -580,10 +795,6 @@ static NSDictionary* GMSCoordinateBoundsToJson(GMSCoordinateBounds* bounds) {
 }
 
 static float ToFloat(NSNumber* data) { return [FLTGoogleMapJsonConversions toFloat:data]; }
-
-static CLLocationCoordinate2D ToLocation(NSArray* data) {
-  return [FLTGoogleMapJsonConversions toLocation:data];
-}
 
 static int ToInt(NSNumber* data) { return [FLTGoogleMapJsonConversions toInt:data]; }
 
