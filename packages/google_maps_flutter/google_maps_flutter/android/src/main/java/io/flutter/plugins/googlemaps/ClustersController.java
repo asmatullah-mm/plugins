@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.AsyncTask;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
@@ -24,6 +25,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.maps.android.clustering.Cluster;
 import com.google.maps.android.clustering.ClusterItem;
 import com.google.maps.android.clustering.ClusterManager;
+import com.google.maps.android.clustering.algo.NonHierarchicalViewBasedAlgorithm;
 import com.google.maps.android.clustering.view.DefaultClusterRenderer;
 import com.google.maps.android.ui.IconGenerator;
 
@@ -68,7 +70,12 @@ class ClustersController {
     }
 
     void setClusterManager(ClusterManager<MyClusterItem> mClusterManager) {
+        DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+        int widthDp = (int) (metrics.widthPixels / metrics.density);
+        int heightDp = (int) (metrics.heightPixels / metrics.density);
+
         this.clusterManager = mClusterManager;
+        this.clusterManager.setAlgorithm(new NonHierarchicalViewBasedAlgorithm<>(widthDp, heightDp));
         this.clusterManager.setRenderer(new ClustersController.CustomCluster());
     }
 
