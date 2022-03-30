@@ -277,7 +277,7 @@ final class GoogleMapController
             clustersController.addClusterItems(clusterItemsToAdd);
             List<Object> clusterItemsToChange = call.argument("clusterItemsToChange");
             clustersController.changeClusterItems(clusterItemsToChange);
-            List<Object> clusterItemsIdsToRemove = call.argument("clusterItemsIdsToRemove");
+            List<Object> clusterItemsIdsToRemove = call.argument("clusterItemIdsToRemove");
             clustersController.removeClusterItems(clusterItemsIdsToRemove);
             result.success(null);
             break;
