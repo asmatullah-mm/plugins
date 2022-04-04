@@ -18,6 +18,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -30,6 +31,7 @@ import com.google.maps.android.clustering.view.DefaultClusterRenderer;
 import com.google.maps.android.ui.IconGenerator;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,15 +39,17 @@ import java.util.Map;
 import io.flutter.plugin.common.MethodChannel;
 
 @SuppressWarnings("unused")
-class ClustersController {
+class ClustersController implements GoogleMap.OnCameraIdleListener {
 
     private final Map<String, MyClusterItem> clusterItemIdToController;
     private final Map<String, String> googleMapsClusterItemIdToDartMarkerId;
     private ClusterManager<MyClusterItem> clusterManager;
     private final MethodChannel methodChannel;
+    private CameraPosition mPreviousCameraPosition;
     private ClusterIcon clusterIcon;
     private final Context context;
     private GoogleMap googleMap;
+    private int id;
 
     ClustersController(MethodChannel methodChannel, Context context) {
         this.clusterItemIdToController = new HashMap<>();
@@ -56,6 +60,10 @@ class ClustersController {
 
     void setGoogleMap(GoogleMap googleMap) {
         this.googleMap = googleMap;
+    }
+
+    void setMapID(int id) {
+        this.id = id;
     }
 
     void setClusterIcons(List<Object> iconsToAdd) {
@@ -80,12 +88,29 @@ class ClustersController {
     }
 
     void setClusterListeners(@Nullable ClusterListener listener) {
-        this.googleMap.setOnCameraIdleListener(clusterManager);
+        googleMap.setOnCameraIdleListener(this);
         this.clusterManager.setOnClusterClickListener(listener);
         this.clusterManager.setOnClusterItemClickListener(listener);
         this.clusterManager.setOnClusterInfoWindowClickListener(listener);
         this.clusterManager.setOnClusterItemInfoWindowClickListener(listener);
         this.clusterManager.setOnClusterItemInfoWindowLongClickListener(listener);
+    }
+
+    @Override
+    public void onCameraIdle() {
+        methodChannel.invokeMethod("camera#onIdle", Collections.singletonMap("map", id));
+
+        NonHierarchicalViewBasedAlgorithm<?> algo = (NonHierarchicalViewBasedAlgorithm<?>) clusterManager.getAlgorithm();
+        algo.onCameraChange(googleMap.getCameraPosition());
+        // delegate clustering to the algorithm
+        if (algo.shouldReclusterOnMapMovement()) {
+            clusterManager.cluster();
+
+            // Don't re-compute clusters if the map has just been panned/tilted/rotated.
+        } else if (mPreviousCameraPosition == null || mPreviousCameraPosition.zoom != googleMap.getCameraPosition().zoom) {
+            mPreviousCameraPosition = googleMap.getCameraPosition();
+            clusterManager.cluster();
+        }
     }
 
     void addClusterItems(List<Object> itemsToAdd) {

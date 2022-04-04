@@ -153,6 +153,7 @@ final class GoogleMapController
         markersController.addMarkersListener(this);
 
         clustersController.setGoogleMap(googleMap);
+        clustersController.setMapID(id);
         clustersController.setClusterIcons(this.clusterIcons);
         clustersController.setClusterManager(new ClusterManager<>(context, googleMap, markersController.getMarkerManager()));
         clustersController.setClusterListeners(this);
@@ -578,7 +579,7 @@ final class GoogleMapController
     }
     googleMap.setOnCameraMoveStartedListener(listener);
     googleMap.setOnCameraMoveListener(listener);
-    googleMap.setOnCameraIdleListener(listener);
+//    googleMap.setOnCameraIdleListener(listener);
 //    googleMap.setOnMarkerClickListener(listener);
 //    googleMap.setOnMarkerDragListener(listener);
     googleMap.setOnPolygonClickListener(listener);
