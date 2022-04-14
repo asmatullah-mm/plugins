@@ -337,6 +337,23 @@ static UIImage* ExtractIcon(NSObject<FlutterPluginRegistrar>* registrar, NSArray
     }
 }
 
+
+- (void)removeClusterIds:(NSArray*)clusterIdsToRemove {
+    for (NSString* markerId in clusterIdsToRemove) {
+      if (!markerId) {
+          continue;
+      }
+      FLTGoogleMapClusterController* controller = _clusterIdToController[markerId];
+      if (!controller) {
+          continue;
+      }
+      GMSMarker *marker = controller.getMarker;
+      [_clusterManager removeItem:marker];
+      [controller removeMarker];
+      [_clusterIdToController removeObjectForKey:markerId];
+    }
+}
+
 - (id<GMUClusterIconGenerator>)defaultIconGenerator {
     return [[GMUDefaultClusterIconGenerator alloc] init];
 }

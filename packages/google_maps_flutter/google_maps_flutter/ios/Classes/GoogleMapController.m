@@ -434,6 +434,12 @@ typedef NS_ENUM(NSInteger, ClusterAlgorithmMode) {
     id clusterItemsToAdd = call.arguments[@"clusterItemsToAdd"];
     if ([clusterItemsToAdd isKindOfClass:[NSArray class]]) {
       [_clustersController addClusterItems:clusterItemsToAdd];
+      [_clusterManager cluster];
+    }
+    id clusterItemIdsToRemove = call.arguments[@"clusterItemIdsToRemove"];
+    if ([clusterItemIdsToRemove isKindOfClass:[NSArray class]]) {
+      [_clustersController removeClusterIds:clusterItemIdsToRemove];
+      [_clusterManager cluster];
     }
     result(nil);
   } else if ([call.method isEqualToString:@"markers#showInfoWindow"]) {

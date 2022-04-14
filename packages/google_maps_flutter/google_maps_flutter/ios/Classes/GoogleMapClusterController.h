@@ -53,6 +53,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)addClusterItems:(NSArray*)addClusterItems;
 - (BOOL)onClusterTap:(id<GMUCluster>)cluster;
 - (BOOL)onClusterItemTap:(NSString*)markerId;
+- (void)removeClusterIds:(NSArray*)clusterIdsToRemove;
 
 @end
 
