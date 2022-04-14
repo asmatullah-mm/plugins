@@ -712,9 +712,7 @@ typedef NS_ENUM(NSInteger, ClusterAlgorithmMode) {
 
 - (BOOL)mapView:(GMSMapView *)mapView didTapMarker:(GMSMarker*)marker {
   NSString* markerId = marker.userData[0];
-  if ([marker.userData conformsToProtocol:@protocol(GMUClusterItem)]) {
-    return [_clustersController onClusterItemTap:markerId];
-  }
+  [_clustersController onClusterItemTap:markerId]
   return [_markersController onMarkerTap:markerId];
 }
 
