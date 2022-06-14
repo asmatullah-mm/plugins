@@ -352,7 +352,7 @@ class ClustersController implements GoogleMap.OnCameraIdleListener {
         protected boolean shouldRenderAsCluster(Cluster cluster) {
             final boolean[] shouldCluster = {true};
             try {
-                shouldCluster[0] =  googleMap.getCameraPosition().zoom <= 12;
+                shouldCluster[0] =  googleMap.getCameraPosition().zoom <= 13;
             } catch (Exception ignored) {
             }
             return cluster.getSize() > 1 && shouldCluster[0];
