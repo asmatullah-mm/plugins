@@ -177,7 +177,7 @@ static UIImage* ExtractIcon(NSObject<FlutterPluginRegistrar>* registrar, NSArray
     renderer.delegate = self;
     renderer.animationDuration = 0.2;
     renderer.minimumClusterSize = 2;
-    renderer.maximumClusterZoom = 20;
+    renderer.maximumClusterZoom = 13;
     _clusterManager =
     [[GMUClusterManager alloc] initWithMap:_mapView algorithm:algorithm renderer:renderer];
         
