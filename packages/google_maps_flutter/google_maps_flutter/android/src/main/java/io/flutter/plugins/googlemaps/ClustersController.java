@@ -350,8 +350,12 @@ class ClustersController implements GoogleMap.OnCameraIdleListener {
 
         @Override
         protected boolean shouldRenderAsCluster(Cluster cluster) {
-            // Always render clusters.
-            return cluster.getSize() > 1;
+            final boolean[] shouldCluster = {true};
+            try {
+                shouldCluster[0] =  googleMap.getCameraPosition().zoom <= 12;
+            } catch (Exception ignored) {
+            }
+            return cluster.getSize() > 1 && shouldCluster[0];
         }
 
         @SuppressLint("StaticFieldLeak")
